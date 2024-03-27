@@ -17,6 +17,7 @@ name = "naming"
 path = "src/naming.rs"
 
 [features]
+qs = []
 inline = []
 cli = []
 flutter_texture_render = []
