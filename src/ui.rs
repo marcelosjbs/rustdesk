@@ -73,7 +73,20 @@ pub fn start(args: &mut [String]) {
     allow_err!(sciter::set_options(sciter::RuntimeOptions::ScriptFeatures(
         ALLOW_FILE_IO as u8 | ALLOW_SOCKET_IO as u8 | ALLOW_EVAL as u8 | ALLOW_SYSINFO as u8
     )));
-    let mut frame = sciter::WindowBuilder::main_window().create();
+
+    let frame = sciter::WindowBuilder::main_window();
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(feature = "qs")]
+    let frame = frame.with_rect(sciter::window::Rectangle {
+        width: 200,
+        height: 500,
+        x: 0,
+        y: 0,
+    });
+
+    let mut frame = frame.create();
+
     #[cfg(windows)]
     allow_err!(sciter::set_options(sciter::RuntimeOptions::UxTheming(true)));
     frame.set_title(&crate::get_app_name());
@@ -160,12 +173,19 @@ pub fn start(args: &mut [String]) {
         };
         frame.load_html(html.as_bytes(), Some(page));
     }
+
+    #[cfg(feature = "qs")]
+    let ui_folder = "ui_qs";
+    #[cfg(not(feature = "qs"))]
+    let ui_folder = "ui";
+
     #[cfg(not(feature = "inline"))]
     frame.load_file(&format!(
-        "file://{}/src/ui/{}",
+        "file://{}/src/{}/{}",
         std::env::current_dir()
             .map(|c| c.display().to_string())
             .unwrap_or("".to_owned()),
+        ui_folder,
         page
     ));
     frame.run_app();
