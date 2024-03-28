@@ -174,20 +174,23 @@ pub fn start(args: &mut [String]) {
         frame.load_html(html.as_bytes(), Some(page));
     }
 
-    #[cfg(feature = "qs")]
-    let ui_folder = "ui_qs";
-    #[cfg(not(feature = "qs"))]
-    let ui_folder = "ui";
-
     #[cfg(not(feature = "inline"))]
-    frame.load_file(&format!(
-        "file://{}/src/{}/{}",
-        std::env::current_dir()
-            .map(|c| c.display().to_string())
-            .unwrap_or("".to_owned()),
-        ui_folder,
-        page
-    ));
+    {
+        #[cfg(feature = "qs")]
+        let ui_folder = "ui_qs";
+        #[cfg(not(feature = "qs"))]
+        let ui_folder = "ui";
+
+        frame.load_file(&format!(
+            "file://{}/src/{}/{}",
+            std::env::current_dir()
+                .map(|c| c.display().to_string())
+                .unwrap_or("".to_owned()),
+            ui_folder,
+            page
+        ));
+    }
+
     frame.run_app();
 }
 

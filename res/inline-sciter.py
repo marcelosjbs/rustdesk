@@ -1,36 +1,44 @@
 #!/usr/bin/env python3
 
 import re
+import argparse
 
+parser = argparse.ArgumentParser(description='Options')
+parser.add_argument('--qs', action='store_true', help='user the qs ui folder.')
+args = parser.parse_args()
+
+ui_folder = "src/ui_qs/" if args.qs else "src/ui/"
+def getFilePath(file_name: str):
+    return ui_folder + file_name
 
 def strip(s): return re.sub(r'\s+\n', '\n', re.sub(r'\n\s+', '\n', s))
 
-common_css = open('src/ui/common.css').read()
-common_tis = open('src/ui/common.tis', encoding='UTF8').read()
+common_css = open(getFilePath('common.css')).read()
+common_tis = open(getFilePath('common.tis'), encoding='UTF8').read()
 
-index = open('src/ui/index.html').read() \
-    .replace('@import url(index.css);', open('src/ui/index.css').read()) \
-    .replace('include "index.tis";', open('src/ui/index.tis').read()) \
-    .replace('include "msgbox.tis";', open('src/ui/msgbox.tis').read()) \
-    .replace('include "ab.tis";', open('src/ui/ab.tis').read())
+index = open(getFilePath('index.html')).read() \
+    .replace('@import url(index.css);', open(getFilePath('index.css')).read()) \
+    .replace('include "index.tis";', open(getFilePath('index.tis')).read()) \
+    .replace('include "msgbox.tis";', open(getFilePath('msgbox.tis')).read()) \
+    .replace('include "ab.tis";', open(getFilePath('ab.tis')).read())
 
-remote = open('src/ui/remote.html').read() \
-    .replace('@import url(remote.css);', open('src/ui/remote.css').read()) \
-    .replace('@import url(header.css);', open('src/ui/header.css').read()) \
-    .replace('@import url(file_transfer.css);', open('src/ui/file_transfer.css').read()) \
-    .replace('include "remote.tis";', open('src/ui/remote.tis').read()) \
-    .replace('include "msgbox.tis";', open('src/ui/msgbox.tis').read()) \
-    .replace('include "grid.tis";', open('src/ui/grid.tis').read()) \
-    .replace('include "header.tis";', open('src/ui/header.tis').read()) \
-    .replace('include "file_transfer.tis";', open('src/ui/file_transfer.tis').read()) \
-    .replace('include "port_forward.tis";', open('src/ui/port_forward.tis').read())
+remote = open(getFilePath('remote.html')).read() \
+    .replace('@import url(remote.css);', open(getFilePath('remote.css')).read()) \
+    .replace('@import url(header.css);', open(getFilePath('header.css')).read()) \
+    .replace('@import url(file_transfer.css);', open(getFilePath('file_transfer.css')).read()) \
+    .replace('include "remote.tis";', open(getFilePath('remote.tis')).read()) \
+    .replace('include "msgbox.tis";', open(getFilePath('msgbox.tis')).read()) \
+    .replace('include "grid.tis";', open(getFilePath('grid.tis')).read()) \
+    .replace('include "header.tis";', open(getFilePath('header.tis')).read()) \
+    .replace('include "file_transfer.tis";', open(getFilePath('file_transfer.tis')).read()) \
+    .replace('include "port_forward.tis";', open(getFilePath('port_forward.tis')).read())
 
-chatbox = open('src/ui/chatbox.html').read()
-install = open('src/ui/install.html').read().replace('include "install.tis";', open('src/ui/install.tis').read())
+chatbox = open(getFilePath('chatbox.html')).read()
+install = open(getFilePath('install.html')).read().replace('include "install.tis";', open(getFilePath('install.tis')).read())
 
-cm = open('src/ui/cm.html').read() \
-    .replace('@import url(cm.css);', open('src/ui/cm.css').read()) \
-    .replace('include "cm.tis";', open('src/ui/cm.tis').read())
+cm = open(getFilePath('cm.html')).read() \
+    .replace('@import url(cm.css);', open(getFilePath('cm.css')).read()) \
+    .replace('include "cm.tis";', open(getFilePath('cm.tis')).read())
 
 
 def compress(s):

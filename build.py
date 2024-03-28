@@ -157,6 +157,11 @@ def make_parser():
         "--package",
         type=str
     )
+    parser.add_argument(
+        '--qs',
+        action='store_true',
+        help='Build in qs mode'
+    )
     return parser
 
 
@@ -293,6 +298,8 @@ def get_features(args):
         features.append('appimage')
     if args.unix_file_copy_paste:
         features.append('unix-file-copy-paste')
+    if args.qs:
+        features.append('qs')
     print("features:", features)
     return features
 
@@ -476,15 +483,17 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    if os.path.exists(exe_path):
-        os.unlink(exe_path)
-    if os.path.isfile('/usr/bin/pacman'):
-        system2('git checkout src/ui/common.tis')
+    # if os.path.exists(exe_path):
+    #     os.unlink(exe_path)
+    # if os.path.isfile('/usr/bin/pacman'):
+    #     system2('git checkout src/ui/common.tis')
     version = get_version()
     features = ','.join(get_features(args))
     flutter = args.flutter
+
     if not flutter:
-        system2('python3 res/inline-sciter.py')
+        inline_sciter = 'python3 res/inline-sciter.py --qs' if(args.qs) else 'python3 res/inline-sciter.py'
+        system2(inline_sciter)
     print(args.skip_cargo)
     if args.skip_cargo:
         skip_cargo = True
@@ -493,20 +502,20 @@ def main():
     if package:
         build_deb_from_folder(version, package)
         return
-    res_dir = 'resources'
+    res_dir = 'resoucer'
+    # TODO: here, verify if the res_dir exist and create a the folder if don't
     external_resources(flutter, args, res_dir)
     if windows:
         # build virtual display dynamic library
-        os.chdir('libs/virtual_display/dylib')
-        system2('cargo build --release')
-        os.chdir('../../..')
+        # os.chdir('libs/virtual_display/dylib')
+        # system2('cargo build --release')
+        # os.chdir('../../..')
 
         if flutter:
             build_flutter_windows(version, features, args.skip_portable_pack)
             return
-        system2('cargo build --release --features ' + features)
+        # system2('cargo build --release --bins --features ' + features)
         # system2('upx.exe target/release/rustdesk.exe')
-        system2('mv target/release/rustdesk.exe target/release/RustDesk.exe')
         pa = os.environ.get('P')
         if pa:
             # https://certera.com/kb/tutorial-guide-for-safenet-authentication-client-for-code-signing/
@@ -515,13 +524,13 @@ def main():
                 'target\\release\\rustdesk.exe')
         else:
             print('Not signed')
-        system2(
-            f'cp -rf target/release/RustDesk.exe {res_dir}')
+
+        system2(f'cp -rf target/release/rustdesk.exe {res_dir}')
+        system2(f'cp target/release/sciter.dll {res_dir}')
         os.chdir('libs/portable')
         system2('pip3 install -r requirements.txt')
-        system2(
-            f'python3 ./generate.py -f ../../{res_dir} -o . -e ../../{res_dir}/rustdesk-{version}-win7-install.exe')
-        system2('mv ../../{res_dir}/rustdesk-{version}-win7-install.exe ../..')
+        system2(f'python3 ./generate.py -f ../../{res_dir} -o . -e ../../{res_dir}/rustdesk.exe')
+        system2(f'mv ../../target/release/rustdesk-portable-packer.exe ../../{res_dir}/rustdesk-portable-packer.exe')
     elif os.path.isfile('/usr/bin/pacman'):
         # pacman -S -needed base-devel
         system2("sed -i 's/pkgver=.*/pkgver=%s/g' res/PKGBUILD" % version)
