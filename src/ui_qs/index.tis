@@ -1177,18 +1177,18 @@ function checkConnectStatus() {
 }                                
                                  
 var enter = false;               
-function self.onMouse(evt) {     
-    switch(evt.type) {           
-    case Event.MOUSE_ENTER:    
-        enter = true;
-        check_if_overlay();
-        break;
-    case Event.MOUSE_LEAVE:
-        $(#overlay).style#display = 'none';
-        enter = false;
-        break;
-    }
-}
+// function self.onMouse(evt) {     
+//     switch(evt.type) {           
+//     case Event.MOUSE_ENTER:    
+//         enter = true;
+//         check_if_overlay();
+//         break;
+//     case Event.MOUSE_LEAVE:
+//         $(#overlay).style#display = 'none';
+//         enter = false;
+//         break;
+//     }
+// }
 
 function check_if_overlay() {
     if (!handler.get_option('allow-remote-config-modification')) {
