@@ -74,7 +74,7 @@ pub fn start(args: &mut [String]) {
         ALLOW_FILE_IO as u8 | ALLOW_SOCKET_IO as u8 | ALLOW_EVAL as u8 | ALLOW_SYSINFO as u8
     )));
 
-    let frame = sciter::WindowBuilder::main_window();
+    let frame = sciter::WindowBuilder::main_window().resizeable();
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[cfg(feature = "qs")]

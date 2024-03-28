@@ -507,14 +507,14 @@ def main():
     external_resources(flutter, args, res_dir)
     if windows:
         # build virtual display dynamic library
-        # os.chdir('libs/virtual_display/dylib')
-        # system2('cargo build --release')
-        # os.chdir('../../..')
+        os.chdir('libs/virtual_display/dylib')
+        system2('cargo build --release')
+        os.chdir('../../..')
 
         if flutter:
             build_flutter_windows(version, features, args.skip_portable_pack)
             return
-        # system2('cargo build --release --bins --features ' + features)
+        system2('cargo build --release --bins --features ' + features)
         # system2('upx.exe target/release/rustdesk.exe')
         pa = os.environ.get('P')
         if pa:
