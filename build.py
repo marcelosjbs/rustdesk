@@ -497,13 +497,14 @@ def main():
     print(args.skip_cargo)
     if args.skip_cargo:
         skip_cargo = True
-    portable = args.portable
     package = args.package
     if package:
         build_deb_from_folder(version, package)
         return
-    res_dir = 'resoucer'
-    # TODO: here, verify if the res_dir exist and create a the folder if don't
+    res_dir = 'build'
+    if not os.path.exists(res_dir):
+        os.makedirs(res_dir)
+        print("res_dir folder created")
     external_resources(flutter, args, res_dir)
     if windows:
         # build virtual display dynamic library
@@ -514,7 +515,8 @@ def main():
         if flutter:
             build_flutter_windows(version, features, args.skip_portable_pack)
             return
-        system2('cargo build --release --bins --features ' + features)
+        if not(skip_cargo):
+            system2('cargo build --release --bins --features ' + features)
         # system2('upx.exe target/release/rustdesk.exe')
         pa = os.environ.get('P')
         if pa:
