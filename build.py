@@ -503,7 +503,6 @@ def main():
         return
     res_dir = 'build'
     if os.path.exists(res_dir):
-        os.rmdir(res_dir)
         files = os.listdir(res_dir)
         for filename in files:
             file_path = os.path.join(res_dir, filename)
