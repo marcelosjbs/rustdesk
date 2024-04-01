@@ -502,12 +502,21 @@ def main():
         build_deb_from_folder(version, package)
         return
     res_dir = 'build'
-    if not os.path.exists(res_dir):
+    if os.path.exists(res_dir):
+        os.rmdir(res_dir)
+        files = os.listdir(res_dir)
+        for filename in files:
+            file_path = os.path.join(res_dir, filename)
+            os.remove(file_path)
+        print(f"All files from {res_dir}, deleted")
+    else:
         os.makedirs(res_dir)
-        print("res_dir folder created")
+
+    print("res_dir folder created")
     external_resources(flutter, args, res_dir)
     if windows:
         # build virtual display dynamic library
+        print("On windows use Bash!")
         os.chdir('libs/virtual_display/dylib')
         system2('cargo build --release')
         os.chdir('../../..')
