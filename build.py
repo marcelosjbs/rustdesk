@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from fileinput import filename
 import os
 import pathlib
 import platform
@@ -9,6 +10,8 @@ import shutil
 import hashlib
 import argparse
 import sys
+from typing import NamedTuple
+import base64
 
 windows = platform.platform().startswith('Windows')
 osx = platform.platform().startswith(
@@ -477,6 +480,29 @@ def build_flutter_windows(version, features, skip_portable_pack):
     print(
         f'output location: {os.path.abspath(os.curdir)}/rustdesk-{version}-install.exe')
 
+class Icon(NamedTuple):
+    filename: str
+    size: int
+
+def setup_icon(args):
+    print("Setup the aplication icons")
+    icon_path = "res/logo.png" if not args.qs else "res/logo-qs.png"
+
+    icons: list[Icon] = [
+        Icon(filename="icon.png", size=1024),
+        Icon(filename="32x32.png", size=32),
+        Icon(filename="64x64.png", size=64),
+        Icon(filename="128x128.png", size=128),
+        Icon(filename="128x128@2x.png", size=256),
+        Icon(filename="mac-icon.png", size=1024),
+        Icon(filename="tray-icon.ico", size=128),
+        Icon(filename="icon.ico", size=64),
+    ]
+
+    for icon in icons:
+        print(f"creating the icon {icon}")
+        path = os.path.join("res", icon.filename)
+        system2(f"magick {icon_path} -colors 256 -resize {icon.size}x{icon.size} {path}")
 
 def main():
     global skip_cargo
@@ -491,6 +517,7 @@ def main():
     features = ','.join(get_features(args))
     flutter = args.flutter
 
+    setup_icon(args)
     if not flutter:
         inline_sciter = 'python3 res/inline-sciter.py --qs' if(args.qs) else 'python3 res/inline-sciter.py'
         system2(inline_sciter)
@@ -507,11 +534,10 @@ def main():
         for filename in files:
             file_path = os.path.join(res_dir, filename)
             os.remove(file_path)
-        print(f"All files from {res_dir}, deleted")
     else:
         os.makedirs(res_dir)
 
-    print("res_dir folder created")
+    print(f"{res_dir} folder created")
     external_resources(flutter, args, res_dir)
     if windows:
         # build virtual display dynamic library

@@ -2,6 +2,8 @@
 
 import re
 import argparse
+import os
+import base64
 
 parser = argparse.ArgumentParser(description='Options')
 parser.add_argument('--qs', action='store_true', help='user the qs ui folder.')
@@ -56,6 +58,10 @@ with open('src/ui/inline.rs', 'wt') as fh:
     fh.write('const _CHATBOX: ' + compress(strip(chatbox)) + ';\n')
     fh.write('const _INSTALL: ' + compress(strip(install)) + ';\n')
     fh.write('const _CONNECTION_MANAGER: ' + compress(strip(cm)) + ';\n')
+    with open(os.path.join("res/", "32x32.png"), "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+        fh.write('const _APP_ICON: &str = "data:image/png;base64,'+encoded_string.decode("utf-8")+'"; \n')
+
     fh.write('''
 fn get(data: &[u8]) -> String {
     String::from_utf8_lossy(data).to_string()
@@ -85,5 +91,9 @@ pub fn get_chatbox() -> String {
 #[inline]
 pub fn get_cm() -> String {
     replace(&_CONNECTION_MANAGER[..])
+}
+#[inline]
+pub fn get_icon() -> String {
+    return _APP_ICON.to_string()
 }
 ''')
