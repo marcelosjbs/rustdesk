@@ -79,7 +79,7 @@ pub fn start(args: &mut [String]) {
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[cfg(feature = "qs")]
     let frame = frame.with_rect(sciter::window::Rectangle {
-        width: 300,
+        width: 350,
         height: 500,
         x: 0,
         y: 0,
