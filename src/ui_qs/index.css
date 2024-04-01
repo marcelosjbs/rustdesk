@@ -429,3 +429,10 @@ li:disabled, li:disabled:hover {
     bottom: 0px;
     background: color(bg);
 }
+
+.logo-image {
+    width: 100%;
+    height: 70px;
+    foreground-size: contain;
+    margin-bottom: 20px;
+}
