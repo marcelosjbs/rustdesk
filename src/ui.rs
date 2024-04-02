@@ -357,7 +357,9 @@ impl UI {
     }
 
     fn is_installed_lower_version(&self) -> bool {
-        is_installed_lower_version()
+        // TODO: removed to prevent update, will be used in the future with a update system
+        // is_installed_lower_version()
+        return false;
     }
 
     fn closing(&mut self, x: i32, y: i32, w: i32, h: i32) {
