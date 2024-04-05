@@ -54,11 +54,11 @@ with open('src/ui/inline.rs', 'wt') as fh:
     fh.write('const _COMMON_CSS: ' + compress(strip(common_css)) + ';\n')
     fh.write('const _COMMON_TIS: ' + compress(strip(common_tis)) + ';\n')
     fh.write('const _INDEX: ' + compress(strip(index)) + ';\n')
-    fh.write('const _REMOTE: ' + compress(strip(remote)) + ';\n')
+    fh.write('const _REMOTE: ' + compress(strip(remote)) + ';\n')   
     fh.write('const _CHATBOX: ' + compress(strip(chatbox)) + ';\n')
     fh.write('const _INSTALL: ' + compress(strip(install)) + ';\n')
     fh.write('const _CONNECTION_MANAGER: ' + compress(strip(cm)) + ';\n')
-    with open(os.path.join("res/", "32x32.png"), "rb") as image_file:
+    with open(os.path.join("res/", "128x128.png"), "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read())
         fh.write('const _APP_ICON: &str = "data:image/png;base64,'+encoded_string.decode("utf-8")+'"; \n')
 
