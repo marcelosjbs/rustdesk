@@ -495,8 +495,6 @@ def setup_icon(args):
         Icon(filename="128x128.png", size=128),
         Icon(filename="128x128@2x.png", size=256),
         Icon(filename="mac-icon.png", size=1024),
-        Icon(filename="mac-tray-light-x2.png", size=48),
-        Icon(filename="mac-tray-dark-x2.png", size=48),
     ]
 
     for icon in icons:
