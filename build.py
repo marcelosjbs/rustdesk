@@ -495,7 +495,8 @@ def setup_icon(args):
         Icon(filename="128x128.png", size=128),
         Icon(filename="128x128@2x.png", size=256),
         Icon(filename="mac-icon.png", size=1024),
-        Icon(filename="tray-icon.ico", size=128),
+        Icon(filename="mac-tray-light-x2.png", size=48),
+        Icon(filename="mac-tray-dark-x2.png", size=48),
     ]
 
     for icon in icons:
@@ -503,8 +504,9 @@ def setup_icon(args):
         path = os.path.join("res", icon.filename)
         system2(f"magick {icon_path} -colors 256 -resize {icon.size}x{icon.size} {path}")
 
-    print("creating the .ico file")
+    print("creating the .ico files")
     system2(f"magick convert {icon_path} -define icon:auto-resize=16,32,48,64,128,256 -compress zip res/icon.ico")
+    system2(f"magick convert {icon_path} -define icon:auto-resize=32 -compress zip res/tray-icon.ico")
 
 def main():
     global skip_cargo
