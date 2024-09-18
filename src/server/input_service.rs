@@ -28,6 +28,7 @@ use std::{
 use winapi::um::winuser::WHEEL_DELTA;
 
 const INVALID_CURSOR_POS: i32 = i32::MIN;
+const INVALID_DISPLAY_IDX: i32 = -1;
 
 #[derive(Default)]
 struct StateCursor {
@@ -71,6 +72,29 @@ impl StatePos {
     #[inline]
     fn is_moved(&self, x: i32, y: i32) -> bool {
         self.is_valid() && (self.cursor_pos.0 != x || self.cursor_pos.1 != y)
+    }
+}
+
+#[derive(Default)]
+struct StateWindowFocus {
+    display_idx: i32,
+}
+
+impl super::service::Reset for StateWindowFocus {
+    fn reset(&mut self) {
+        self.display_idx = INVALID_DISPLAY_IDX;
+    }
+}
+
+impl StateWindowFocus {
+    #[inline]
+    fn is_valid(&self) -> bool {
+        self.display_idx != INVALID_DISPLAY_IDX
+    }
+
+    #[inline]
+    fn is_changed(&self, disp_idx: i32) -> bool {
+        self.is_valid() && self.display_idx != disp_idx
     }
 }
 
@@ -187,7 +211,7 @@ impl LockModesHandler {
     fn new(key_event: &KeyEvent) -> Self {
         let event_caps_enabled = Self::is_modifier_enabled(key_event, ControlKey::CapsLock);
         // Do not use the following code to detect `local_caps_enabled`.
-        // Because the state of get_key_state will not affect simuation of `VIRTUAL_INPUT_STATE` in this file.
+        // Because the state of get_key_state will not affect simulation of `VIRTUAL_INPUT_STATE` in this file.
         //
         // let local_caps_enabled = VirtualInput::get_key_state(
         //     CGEventSourceStateID::CombinedSessionState,
@@ -238,6 +262,7 @@ fn should_disable_numlock(evt: &KeyEvent) -> bool {
 
 pub const NAME_CURSOR: &'static str = "mouse_cursor";
 pub const NAME_POS: &'static str = "mouse_pos";
+pub const NAME_WINDOW_FOCUS: &'static str = "window_focus";
 #[derive(Clone)]
 pub struct MouseCursorService {
     pub sp: ServiceTmpl<MouseCursorSub>,
@@ -277,11 +302,17 @@ pub fn new_pos() -> GenericService {
     svc.sp
 }
 
+pub fn new_window_focus() -> GenericService {
+    let svc = EmptyExtraFieldService::new(NAME_WINDOW_FOCUS.to_owned(), false);
+    GenericService::repeat::<StateWindowFocus, _, _>(&svc.clone(), 33, run_window_focus);
+    svc.sp
+}
+
 #[inline]
 fn update_last_cursor_pos(x: i32, y: i32) {
     let mut lock = LATEST_SYS_CURSOR_POS.lock().unwrap();
     if lock.1 .0 != x || lock.1 .1 != y {
-        (lock.0, lock.1) = (Instant::now(), (x, y))
+        (lock.0, lock.1) = (Some(Instant::now()), (x, y))
     }
 }
 
@@ -352,6 +383,25 @@ fn run_cursor(sp: MouseCursorService, state: &mut StateCursor) -> ResultType<()>
     Ok(())
 }
 
+fn run_window_focus(sp: EmptyExtraFieldService, state: &mut StateWindowFocus) -> ResultType<()> {
+    let displays = super::display_service::get_sync_displays();
+    if displays.len() <= 1 {
+        return Ok(());
+    }
+    let disp_idx = crate::get_focused_display(displays);
+    if let Some(disp_idx) = disp_idx.map(|id| id as i32) {
+        if state.is_changed(disp_idx) {
+            let mut misc = Misc::new();
+            misc.set_follow_current_display(disp_idx as i32);
+            let mut msg_out = Message::new();
+            msg_out.set_misc(misc);
+            sp.send(msg_out);
+        }
+        state.display_idx = disp_idx;
+    }
+    Ok(())
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 enum KeysDown {
     RdevKey(RawKey),
@@ -364,7 +414,7 @@ lazy_static::lazy_static! {
     };
     static ref KEYS_DOWN: Arc<Mutex<HashMap<KeysDown, Instant>>> = Default::default();
     static ref LATEST_PEER_INPUT_CURSOR: Arc<Mutex<Input>> = Default::default();
-    static ref LATEST_SYS_CURSOR_POS: Arc<Mutex<(Instant, (i32, i32))>> = Arc::new(Mutex::new((Instant::now().sub(MOUSE_MOVE_PROTECTION_TIMEOUT), (INVALID_CURSOR_POS, INVALID_CURSOR_POS))));
+    static ref LATEST_SYS_CURSOR_POS: Arc<Mutex<(Option<Instant>, (i32, i32))>> = Arc::new(Mutex::new((None, (INVALID_CURSOR_POS, INVALID_CURSOR_POS))));
 }
 static EXITING: AtomicBool = AtomicBool::new(false);
 
@@ -424,12 +474,15 @@ struct VirtualInputState {
 #[cfg(target_os = "macos")]
 impl VirtualInputState {
     fn new() -> Option<Self> {
-        VirtualInput::new(CGEventSourceStateID::CombinedSessionState, CGEventTapLocation::Session)
-            .map(|virtual_input| Self {
-                virtual_input,
-                capslock_down: false,
-            })
-            .ok()
+        VirtualInput::new(
+            CGEventSourceStateID::CombinedSessionState,
+            CGEventTapLocation::Session,
+        )
+        .map(|virtual_input| Self {
+            virtual_input,
+            capslock_down: false,
+        })
+        .ok()
     }
 
     #[inline]
@@ -758,7 +811,13 @@ fn active_mouse_(conn: i32) -> bool {
     true
     /* this method is buggy (not working on macOS, making fast moving mouse event discarded here) and added latency (this is blocking way, must do in async way), so we disable it for now
     // out of time protection
-    if LATEST_SYS_CURSOR_POS.lock().unwrap().0.elapsed() > MOUSE_MOVE_PROTECTION_TIMEOUT {
+    if LATEST_SYS_CURSOR_POS
+        .lock()
+        .unwrap()
+        .0
+        .map(|t| t.elapsed() > MOUSE_MOVE_PROTECTION_TIMEOUT)
+        .unwrap_or(true)
+    {
         return true;
     }
 
@@ -917,12 +976,11 @@ pub fn handle_mouse_(evt: &MouseEvent, conn: i32) {
         },
         MOUSE_TYPE_WHEEL | MOUSE_TYPE_TRACKPAD => {
             #[allow(unused_mut)]
-            let mut x = evt.x;
+            let mut x = -evt.x;
             #[allow(unused_mut)]
             let mut y = evt.y;
             #[cfg(not(windows))]
             {
-                x = -x;
                 y = -y;
             }
 
@@ -1036,20 +1094,24 @@ pub async fn lock_screen() {
     }
 }
 
+#[inline]
+#[cfg(target_os = "linux")]
 pub fn handle_key(evt: &KeyEvent) {
-    #[cfg(target_os = "macos")]
-    if !is_server() {
-        // having GUI, run main GUI thread, otherwise crash
-        let evt = evt.clone();
-        QUEUE.exec_async(move || handle_key_(&evt));
-        key_sleep();
-        return;
-    }
-    #[cfg(windows)]
-    crate::portable_service::client::handle_key(evt);
-    #[cfg(not(windows))]
     handle_key_(evt);
-    #[cfg(target_os = "macos")]
+}
+
+#[inline]
+#[cfg(target_os = "windows")]
+pub fn handle_key(evt: &KeyEvent) {
+    crate::portable_service::client::handle_key(evt);
+}
+
+#[inline]
+#[cfg(target_os = "macos")]
+pub fn handle_key(evt: &KeyEvent) {
+    // having GUI, run main GUI thread, otherwise crash
+    let evt = evt.clone();
+    QUEUE.exec_async(move || handle_key_(&evt));
     key_sleep();
 }
 
@@ -1575,6 +1637,18 @@ async fn send_sas() -> ResultType<()> {
         crate::platform::send_sas();
     };
     Ok(())
+}
+
+#[inline]
+#[cfg(target_os = "linux")]
+pub fn wayland_use_uinput() -> bool {
+    !crate::platform::is_x11() && crate::is_server()
+}
+
+#[inline]
+#[cfg(target_os = "linux")]
+pub fn wayland_use_rdp_input() -> bool {
+    !crate::platform::is_x11() && !crate::is_server()
 }
 
 lazy_static::lazy_static! {

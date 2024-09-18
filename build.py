@@ -28,17 +28,22 @@ flutter_build_dir_2 = f'flutter/{flutter_build_dir}'
 skip_cargo = False
 
 
-def get_arch() -> str:
-    custom_arch = os.environ.get("ARCH")
+def get_deb_arch() -> str:
+    custom_arch = os.environ.get("DEB_ARCH")
     if custom_arch is None:
         return "amd64"
     return custom_arch
 
+def get_deb_extra_depends() -> str:
+    custom_arch = os.environ.get("DEB_ARCH")
+    if custom_arch == "armhf": # for arm32v7 libsciter-gtk.so
+        return ", libatomic1"
+    return ""
 
 def system2(cmd):
-    err = os.system(cmd)
-    if err != 0:
-        print(f"Error occurred when executing: {cmd}. Exiting.")
+    exit_code = os.system(cmd)
+    if exit_code != 0:
+        sys.stderr.write(f"Error occurred when executing: `{cmd}`. Exiting.\n")
         sys.exit(-1)
 
 
@@ -51,15 +56,7 @@ def get_version():
 
 
 def parse_rc_features(feature):
-    available_features = {
-        'PrivacyMode': {
-            'platform': ['windows'],
-            'zip_url': 'https://github.com/fufesou/RustDeskTempTopMostWindow/releases/download/v0.3'
-                       '/TempTopMostWindow_x64.zip',
-            'checksum_url': 'https://github.com/fufesou/RustDeskTempTopMostWindow/releases/download/v0.3/checksum_md5',
-            'include': ['WindowInjection.dll'],
-        }
-    }
+    available_features = {}
     apply_features = {}
     if not feature:
         feature = []
@@ -84,7 +81,6 @@ def parse_rc_features(feature):
     elif isinstance(feature, list):
         if windows:
             # download third party is deprecated, we use github ci instead.
-            # force add PrivacyMode
             # feature.append('PrivacyMode')
             pass
         for feat in feature:
@@ -111,7 +107,7 @@ def make_parser():
         nargs='+',
         default='',
         help='Integrate features, windows only.'
-             'Available: PrivacyMode. Special value is "ALL" and empty "". Default is empty.')
+             'Available: [Not used for now]. Special value is "ALL" and empty "". Default is empty.')
     parser.add_argument('--flutter', action='store_true',
                         help='Build flutter package', default=False)
     parser.add_argument(
@@ -121,9 +117,9 @@ def make_parser():
             '' if windows or osx else ', need libva-dev, libvdpau-dev.')
     )
     parser.add_argument(
-        '--gpucodec',
+        '--vram',
         action='store_true',
-        help='Enable feature gpucodec, only available on windows now.'
+        help='Enable feature vram, only available on windows now.'
     )
     parser.add_argument(
         '--portable',
@@ -134,16 +130,6 @@ def make_parser():
         '--unix-file-copy-paste',
         action='store_true',
         help='Build with unix file copy paste feature'
-    )
-    parser.add_argument(
-        '--flatpak',
-        action='store_true',
-        help='Build rustdesk libs with the flatpak feature enabled'
-    )
-    parser.add_argument(
-        '--appimage',
-        action='store_true',
-        help='Build rustdesk libs with the appimage feature enabled'
     )
     parser.add_argument(
         '--skip-cargo',
@@ -290,15 +276,10 @@ def get_features(args):
     features = ['inline'] if not args.flutter else []
     if args.hwcodec:
         features.append('hwcodec')
-    if args.gpucodec:
-        features.append('gpucodec')
+    if args.vram:
+        features.append('vram')
     if args.flutter:
         features.append('flutter')
-        features.append('flutter_texture_render')
-    if args.flatpak:
-        features.append('flatpak')
-    if args.appimage:
-        features.append('appimage')
     if args.unix_file_copy_paste:
         features.append('unix-file-copy-paste')
     if args.qs:
@@ -316,10 +297,11 @@ Version: %s
 Architecture: %s
 Maintainer: rustdesk <info@rustdesk.com>
 Homepage: https://rustdesk.com
-Depends: libgtk-3-0, libxcb-randr0, libxdo3, libxfixes3, libxcb-shape0, libxcb-xfixes0, libasound2, libsystemd0, curl, libva-drm2, libva-x11-2, libvdpau1, libgstreamer-plugins-base1.0-0, libpam0g, libappindicator3-1, gstreamer1.0-pipewire
+Depends: libgtk-3-0, libxcb-randr0, libxdo3, libxfixes3, libxcb-shape0, libxcb-xfixes0, libasound2, libsystemd0, curl, libva-drm2, libva-x11-2, libvdpau1, libgstreamer-plugins-base1.0-0, libpam0g, gstreamer1.0-pipewire%s
+Recommends: libayatana-appindicator3-1
 Description: A remote control software.
 
-""" % (version, get_arch())
+""" % (version, get_deb_arch(), get_deb_extra_depends())
     file = open(control_file_path, "w")
     file.write(content)
     file.close()

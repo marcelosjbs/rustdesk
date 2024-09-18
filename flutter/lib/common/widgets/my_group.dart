@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
+import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 
 import '../../common.dart';
@@ -24,17 +25,14 @@ class _MyGroupState extends State<MyGroup> {
   static TextEditingController searchUserController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Obx(() {
       if (!gFFI.userModel.isLogin) {
         return Center(
             child: ElevatedButton(
                 onPressed: loginDialog, child: Text(translate("Login"))));
+      } else if (gFFI.userModel.networkError.isNotEmpty) {
+        return netWorkErrorWidget();
       } else if (gFFI.groupModel.groupLoading.value && gFFI.groupModel.emtpy) {
         return const Center(
           child: CircularProgressIndicator(),
@@ -47,13 +45,16 @@ class _MyGroupState extends State<MyGroup> {
               err: gFFI.groupModel.groupLoadError,
               retry: null,
               close: () => gFFI.groupModel.groupLoadError.value = ''),
-          Expanded(child: isDesktop ? _buildDesktop() : _buildMobile())
+          Expanded(
+              child: Obx(() => stateGlobal.isPortrait.isTrue
+                  ? _buildPortrait()
+                  : _buildLandscape())),
         ],
       );
     });
   }
 
-  Widget _buildDesktop() {
+  Widget _buildLandscape() {
     return Row(
       children: [
         Container(
@@ -89,7 +90,7 @@ class _MyGroupState extends State<MyGroup> {
     );
   }
 
-  Widget _buildMobile() {
+  Widget _buildPortrait() {
     return Column(
       children: [
         Container(
@@ -159,14 +160,14 @@ class _MyGroupState extends State<MyGroup> {
         }
         return true;
       }).toList();
-      final listView = ListView.builder(
-          shrinkWrap: isMobile,
+      listView(bool isPortrait) => ListView.builder(
+          shrinkWrap: isPortrait,
           itemCount: items.length,
           itemBuilder: (context, index) => _buildUserItem(items[index]));
       var maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
-      return isDesktop
-          ? listView
-          : LimitedBox(maxHeight: maxHeight, child: listView);
+      return Obx(() => stateGlobal.isPortrait.isFalse
+          ? listView(false)
+          : LimitedBox(maxHeight: maxHeight, child: listView(true)));
     });
   }
 

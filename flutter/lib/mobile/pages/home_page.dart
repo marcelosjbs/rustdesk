@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/mobile/pages/server_page.dart';
 import 'package:flutter_hbb/mobile/pages/settings_page.dart';
+import 'package:flutter_hbb/web/settings_page.dart';
 import 'package:get/get.dart';
 import '../../common.dart';
 import '../../common/widgets/chat_page.dart';
+import '../../models/platform_model.dart';
 import 'connection_page.dart';
 
 abstract class PageShape extends Widget {
@@ -25,8 +27,9 @@ class HomePageState extends State<HomePage> {
   var _selectedIndex = 0;
   int get selectedIndex => _selectedIndex;
   final List<PageShape> _pages = [];
+  int _chatPageTabIndex = -1;
   bool get isChatPageCurrentTab => isAndroid
-      ? _selectedIndex == 1
+      ? _selectedIndex == _chatPageTabIndex
       : false; // change this when ios have chat page
 
   void refreshPages() {
@@ -43,8 +46,13 @@ class HomePageState extends State<HomePage> {
 
   void initPages() {
     _pages.clear();
-    _pages.add(ConnectionPage());
-    if (isAndroid) {
+    if (!bind.isIncomingOnly()) {
+      _pages.add(ConnectionPage(
+        appBarActions: [],
+      ));
+    }
+    if (isAndroid && !bind.isOutgoingOnly()) {
+      _chatPageTabIndex = _pages.length;
       _pages.addAll([ChatPage(type: ChatPageType.mobileMain), ServerPage()]);
     }
     _pages.add(SettingsPage());
@@ -141,12 +149,13 @@ class HomePageState extends State<HomePage> {
         ],
       );
     }
-    return Text("RustDesk");
+    return Text(bind.mainGetAppNameSync());
   }
 }
 
 class WebHomePage extends StatelessWidget {
-  final connectionPage = ConnectionPage();
+  final connectionPage =
+      ConnectionPage(appBarActions: <Widget>[const WebSettingsPage()]);
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +163,7 @@ class WebHomePage extends StatelessWidget {
       // backgroundColor: MyTheme.grayBg,
       appBar: AppBar(
         centerTitle: true,
-        title: Text("RustDesk${isWeb ? " (Beta) " : ""}"),
+        title: Text(bind.mainGetAppNameSync()),
         actions: connectionPage.appBarActions,
       ),
       body: connectionPage,
