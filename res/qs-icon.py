@@ -1,7 +1,6 @@
 import os
 import sys
 from typing import NamedTuple
-from build import system2
 
 class Icon(NamedTuple):
     filename: str
