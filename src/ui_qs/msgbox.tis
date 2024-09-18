@@ -66,9 +66,11 @@ class MsgboxComponent: Reactor.Component {
     }
 
     function get2faContent() {
+        var enable_trusted_devices = handler.get_enable_trusted_devices();
         return <div .form>
             <div>{translate('enter-2fa-title')}</div>
             <div .code><input name='code' type='text' .outline-focus /></div>
+            {enable_trusted_devices ? <div><button|checkbox(trust_this_device) {ts}>{translate('Trust this device')}</button></div> : ""}
         </div>;
     }
 
@@ -150,7 +152,7 @@ class MsgboxComponent: Reactor.Component {
         };
         self.timer(3ms, msgboxTimerFunc);
         return (<div><div style="position: absolute; size:*; background:black; opacity:0.5;" />
-        <div style="size: *; position: absolute; padding: 5px">
+        <div style="size: *; position: absolute;">
             <div style={"border: " + color + " solid 1px; background: color(bg); margin: *; width:" + (this.width) + "px; min-height:" + (this.height) + "px"}>
             <div .caption style={"background: " + color}>
                 {translate(this.title)}
