@@ -501,7 +501,7 @@ def main():
     features = ','.join(get_features(args))
     flutter = args.flutter
 
-    setup_icon(args)
+   #  setup_icon(args)
     if not flutter:
         inline_sciter = 'python3 res/inline-sciter.py --qs' if(args.qs) else 'python3 res/inline-sciter.py'
         system2(inline_sciter)
